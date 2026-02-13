@@ -5,8 +5,8 @@
 PKG_NAME="linux"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.kernel.org"
-PKG_DEPENDS_HOST="ccache:host"
-PKG_DEPENDS_TARGET="linux:host kmod:host keyutils openssl:host ${KERNEL_EXTRA_DEPENDS_TARGET}"
+PKG_DEPENDS_HOST="ccache:host rsync:host"
+PKG_DEPENDS_TARGET="linux:host kmod:host xz:host keyutils openssl:host ${KERNEL_EXTRA_DEPENDS_TARGET}"
 PKG_NEED_UNPACK="${LINUX_DEPENDS} $(get_pkg_directory initramfs) $(get_pkg_variable initramfs PKG_NEED_UNPACK)"
 PKG_LONGDESC="This package contains a precompiled kernel image and the modules."
 PKG_IS_KERNEL_PKG="yes"
@@ -16,36 +16,23 @@ PKG_PATCH_DIRS="${LINUX}"
 
 case "${LINUX}" in
   amlogic)
-    PKG_VERSION="05f7e89ab9731565d8a62e3b5d1ec206485eeb0b" # 6.19.0
-    PKG_SHA256="9e2cf7d100fba5c8a8d4f68f8a4926e8ae2a9d47ed6506a8796a19b1fb103b09"
+    PKG_VERSION="e8f897f4afef0031fe618a8e94127a0934896aba" # 6.8.0
+    PKG_SHA256="52608771cc42196f0a7a71a93270a27ca5f7ba1d9280fb398e521b0620a7a3ac"
     PKG_URL="https://github.com/torvalds/linux/archive/${PKG_VERSION}.tar.gz"
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default"
     ;;
   raspberrypi)
-    PKG_VERSION="9ea9c76f2de058be8cee1391ac877ebdb942943e" # 6.18.10
-    PKG_SHA256="c80c9ffae3bf0a698bf5c207bf4ed878cd538d576b03e6f1dab105d4082a987a"
+    PKG_VERSION="dfff38316c1284c30c68d02cc424bad0562cf253" # 6.6.70
+    PKG_SHA256="daf3f79ac5da3b8a3257ef1f8dec0234f713ef66f8f2365bd4fb83e6e503d356"
     PKG_URL="https://github.com/raspberrypi/linux/archive/${PKG_VERSION}.tar.gz"
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
-    PKG_PATCH_DIRS="raspberrypi"
-    ;;
-  rockchip)
-    PKG_VERSION="05f7e89ab9731565d8a62e3b5d1ec206485eeb0b" # 6.19.0
-    PKG_SHA256="9e2cf7d100fba5c8a8d4f68f8a4926e8ae2a9d47ed6506a8796a19b1fb103b09"
-    PKG_URL="https://github.com/chewitt/linux/archive/${PKG_VERSION}.tar.gz"
-    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
-    PKG_PATCH_DIRS="default rockchip"
     ;;
   *)
-    PKG_VERSION="6.19"
-    PKG_SHA256="303079a8250b8f381f82b03f90463d12ac98d4f6b149b761ea75af1323521357"
+    PKG_VERSION="6.6.71"
+    PKG_SHA256="219715ba2dcfa6539fba09ad3f9212772f3507189eb60d77f8e89b06c32e724e"
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v${PKG_VERSION/.*/}.x/${PKG_NAME}-${PKG_VERSION}.tar.xz"
     PKG_PATCH_DIRS="default"
-    case ${DEVICE} in
-      RK3288|RK3328|RK3399)
-        PKG_PATCH_DIRS+=" rockchip-old"
-        ;;
-    esac
     ;;
 esac
 
@@ -72,10 +59,6 @@ fi
 
 if [[ "${KERNEL_TARGET}" = uImage* ]]; then
   PKG_DEPENDS_TARGET+=" u-boot-tools:host"
-fi
-
-if [ "${BOOTLOADER}" = "bcm2835-bootloader" -a "${TARGET_KERNEL_ARCH}" = "arm64" ]; then
-  PKG_DEPENDS_TARGET+=" pigz:host"
 fi
 
 # Ensure that the dependencies of initramfs:target are built correctly, but
@@ -115,8 +98,7 @@ makeinstall_host() {
 }
 
 pre_make_target() {
-  (
-    cd ${ROOT}
+  ( cd ${ROOT}
     rm -rf ${BUILD}/initramfs
     rm -f ${STAMPS_INSTALL}/initramfs/install_target ${STAMPS_INSTALL}/*/install_init
     ${SCRIPTS}/install initramfs
@@ -146,30 +128,23 @@ pre_make_target() {
     ${PKG_BUILD}/scripts/config --disable CONFIG_CIFS
   fi
 
+  # enable/disable iscsi support
+  [ "${ISCSI_SUPPORT}" = yes ] && OPTION="--enable" || OPTION="--disable"
+  ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_SCSI_ISCSI_ATTRS
+  ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_TCP
+  ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_BOOT_SYSFS
+  ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_IBFT_FIND
+  ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_IBFT
+
+  # disable lima/panfrost if libmali is configured
+  if [ "${OPENGLES}" = "libmali" ]; then
+    ${PKG_BUILD}/scripts/config --disable CONFIG_DRM_LIMA
+    ${PKG_BUILD}/scripts/config --disable CONFIG_DRM_PANFROST
+  fi
+
   # disable wireguard support if not enabled
   if [ ! "${WIREGUARD_SUPPORT}" = yes ]; then
     ${PKG_BUILD}/scripts/config --disable CONFIG_WIREGUARD
-  fi
-
-  # disable vfd support if not enabled
-  if [ ! "${VFD_SUPPORT}" = yes ]; then
-    ${PKG_BUILD}/scripts/config --disable CONFIG_PANEL_CHANGE_MESSAGE
-  else
-    # enable the module and set distro boot message
-    ${PKG_BUILD}/scripts/config --enable CONFIG_AUXDISPLAY
-    ${PKG_BUILD}/scripts/config --enable CONFIG_LINEDISPLAY
-    ${PKG_BUILD}/scripts/config --enable CONFIG_TM16XX
-    ${PKG_BUILD}/scripts/config --enable CONFIG_TM16XX_KEYPAD
-    ${PKG_BUILD}/scripts/config --enable CONFIG_TM16XX_I2C
-    ${PKG_BUILD}/scripts/config --enable CONFIG_TM16XX_SPI
-    ${PKG_BUILD}/scripts/config --enable CONFIG_PANEL_CHANGE_MESSAGE
-    ${PKG_BUILD}/scripts/config --set-str CONFIG_PANEL_BOOT_MESSAGE "${VFD_MESSAGE}"
-    ${PKG_BUILD}/scripts/config --enable CONFIG_INPUT_MATRIXKMAP
-    # enable led activity triggers
-    ${PKG_BUILD}/scripts/config --enable CONFIG_LEDS_TRIGGER_TIMER # Colon
-    ${PKG_BUILD}/scripts/config --enable CONFIG_LEDS_TRIGGER_NETDEV # LAN/WLAN
-    ${PKG_BUILD}/scripts/config --enable CONFIG_USB_LEDS_TRIGGER_USBPORT # USB
-    ${PKG_BUILD}/scripts/config --enable CONFIG_MMC # SD
   fi
 
   if [ "${TARGET_ARCH}" = "x86_64" ]; then
@@ -201,7 +176,7 @@ pre_make_target() {
     kernel_make oldconfig
   else
     # accept default answers for .config changes
-    yes "" | kernel_make oldconfig >/dev/null
+    yes "" | kernel_make oldconfig > /dev/null
   fi
 
   if [ -f "${DISTRO_DIR}/${DISTRO}/kernel_options" ]; then
@@ -215,7 +190,7 @@ pre_make_target() {
       if [ "$(${PKG_BUILD}/scripts/config --state ${OPTION%%=*})" != "$(echo ${OPTION##*=} | tr -d '"')" ]; then
         MISSING_KERNEL_OPTIONS+="\t${OPTION}\n"
       fi
-    done <${DISTRO_DIR}/${DISTRO}/kernel_options
+    done < ${DISTRO_DIR}/${DISTRO}/kernel_options
 
     if [ -n "${MISSING_KERNEL_OPTIONS}" ]; then
       print_color CLR_WARNING "LINUX: kernel options not correct: \n${MISSING_KERNEL_OPTIONS%%}\nPlease run ./tools/check_kernel_config\n"
@@ -237,8 +212,7 @@ make_target() {
   DTC_FLAGS=-@ kernel_make ${KERNEL_TARGET} ${KERNEL_MAKE_EXTRACMD} modules
 
   if [ "${PKG_BUILD_PERF}" = "yes" ]; then
-    (
-      cd tools/perf
+    ( cd tools/perf
 
       # arch specific perf build args
       case "${TARGET_ARCH}" in
@@ -263,14 +237,6 @@ make_target() {
       NO_LIBTRACEEVENT=1 \
       NO_LZMA=1 \
       NO_SDT=1 \
-      NO_LIBDEBUGINFOD=1 \
-      NO_JVMTI=1 \
-      NO_LIBLLVM=1 \
-      NO_LIBPFM4=1 \
-      NO_LIBBABELTRACE=1 \
-      NO_CAPSTONE=1 \
-      NO_LIBPFM4=1 \
-      BUILD_BPF_SKEL=0 \
       CROSS_COMPILE="${TARGET_PREFIX}" \
       JOBS="${CONCURRENCY_MAKE_LEVEL}" \
         make ${PERF_BUILD_ARGS}
@@ -288,9 +254,9 @@ make_target() {
     if [ "${KERNEL_UIMAGE_COMP}" != "none" ]; then
       COMPRESSED_SIZE=$(stat -t "arch/${TARGET_KERNEL_ARCH}/boot/${KERNEL_TARGET}" | awk '{print $2}')
       # align to 1 MiB
-      COMPRESSED_SIZE=$((((${COMPRESSED_SIZE} - 1 >> 20) + 1) << 20))
-      PKG_KERNEL_UIMAGE_LOADADDR=$(printf '%X' "$((${KERNEL_UIMAGE_LOADADDR} + ${COMPRESSED_SIZE}))")
-      PKG_KERNEL_UIMAGE_ENTRYADDR=$(printf '%X' "$((${KERNEL_UIMAGE_ENTRYADDR} + ${COMPRESSED_SIZE}))")
+      COMPRESSED_SIZE=$(( ((${COMPRESSED_SIZE} - 1 >> 20) + 1) << 20 ))
+      PKG_KERNEL_UIMAGE_LOADADDR=$(printf '%X' "$(( ${KERNEL_UIMAGE_LOADADDR} + ${COMPRESSED_SIZE} ))")
+      PKG_KERNEL_UIMAGE_ENTRYADDR=$(printf '%X' "$(( ${KERNEL_UIMAGE_ENTRYADDR} + ${COMPRESSED_SIZE} ))")
     else
       PKG_KERNEL_UIMAGE_LOADADDR=${KERNEL_UIMAGE_LOADADDR}
       PKG_KERNEL_UIMAGE_ENTRYADDR=${KERNEL_UIMAGE_ENTRYADDR}
