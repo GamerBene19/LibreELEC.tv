@@ -37,14 +37,18 @@ case "${LINUX}" in
     # PKG_SHA256="ba637cf19a828ebdfa0ad475c7608299c493698c9848be05948e0bbeb0108675" # 6.11.y
 
     # main bisect
-    PKG_VERSION="e8f897f4afef0031fe618a8e94127a0934896aba"
-    PKG_SHA256="52608771cc42196f0a7a71a93270a27ca5f7ba1d9280fb398e521b0620a7a3ac"
+    # PKG_VERSION="e8f897f4afef0031fe618a8e94127a0934896aba"
+    # PKG_SHA256="52608771cc42196f0a7a71a93270a27ca5f7ba1d9280fb398e521b0620a7a3ac"
     # PKG_VERSION="b837f78fbffa5f8e7e7c59879db54793abf161ec" # bisect
     # PKG_SHA256="52493546e93de45dcb1ac2d6a8206f403b207ea4833ec6dd5df63591541b511b" # bisect
     # PKG_VERSION="69abad618efd17e50bc6f880332ab36b660b0b34" # bisect
     # PKG_SHA256="138d12d3c558b621a6c2971920a8a4613515151bce719a3b61b93fa852087e80" # bisect
     # PKG_VERSION="426e7b4773921d07ab4ab8ba16fbad396d6c9971" # bisect
     # PKG_SHA256="0ad77d6321dab50b86ac2e1ff520e03ccefe684710abdf849b6f4a6e92abfa35" # bisect
+
+    # Other bisect try
+    # PKG_VERSION="1ca3683cc6d2c2ce4204df519c4e4730d037905a"
+    # PKG_SHA256="5cf884cd3ccacc5f6046ef9763d289c939279ec17f766f9885891b657fe05965"
 
     # debugging bisect
     # PKG_VERSION="e20bff0f1b2de9cfe303dd35ff46470104a87404"
@@ -69,8 +73,8 @@ case "${LINUX}" in
     # PKG_SHA256="35afb12d2237158b90996405ac6958c49a775bbf208f35dd03bca3e85cba8be5"
     # PKG_VERSION="9383d4b1349035bc3e931d434515b12c881cad36"
     # PKG_SHA256="befcd237cfacf98cacf94a17e82d093194a241874eef27da7b72d8733d2d9fd2"
-    # PKG_VERSION="2ed7064934dda0766495eaaf6b26332eb63e7df8"
-    # PKG_SHA256="ad8b16d6d054da4e5319ec4dee10707ec1f8d41f946c08c75f17942a866e44cf"
+    PKG_VERSION="2ed7064934dda0766495eaaf6b26332eb63e7df8" # First commit on 6.8.y that builds without patch
+    PKG_SHA256="ad8b16d6d054da4e5319ec4dee10707ec1f8d41f946c08c75f17942a866e44cf"
     PKG_URL="https://github.com/raspberrypi/linux/archive/${PKG_VERSION}.tar.gz"
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     ;;
