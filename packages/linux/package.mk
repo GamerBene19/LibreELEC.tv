@@ -50,7 +50,7 @@ case "${LINUX}" in
     # PKG_VERSION="1ca3683cc6d2c2ce4204df519c4e4730d037905a"
     # PKG_SHA256="5cf884cd3ccacc5f6046ef9763d289c939279ec17f766f9885891b657fe05965"
 
-    # debugging bisect
+    # debugging bisect on rpi-6.8.y
     # PKG_VERSION="e20bff0f1b2de9cfe303dd35ff46470104a87404"
     # PKG_SHA256="11ac5d6f62080682cb36fba3eeefefe4e915cf83b0706842ea9b6d2d49c77bf3"
     # PKG_VERSION="a15b16fa9785e4c494241b9bc7113c3c3ab978dd" 
@@ -73,8 +73,13 @@ case "${LINUX}" in
     # PKG_SHA256="35afb12d2237158b90996405ac6958c49a775bbf208f35dd03bca3e85cba8be5"
     # PKG_VERSION="9383d4b1349035bc3e931d434515b12c881cad36"
     # PKG_SHA256="befcd237cfacf98cacf94a17e82d093194a241874eef27da7b72d8733d2d9fd2"
-    PKG_VERSION="2ed7064934dda0766495eaaf6b26332eb63e7df8" # First commit on 6.8.y that builds without patch
-    PKG_SHA256="ad8b16d6d054da4e5319ec4dee10707ec1f8d41f946c08c75f17942a866e44cf"
+    # PKG_VERSION="2ed7064934dda0766495eaaf6b26332eb63e7df8" # First commit on 6.8.y that builds without patch
+    # PKG_SHA256="ad8b16d6d054da4e5319ec4dee10707ec1f8d41f946c08c75f17942a866e44cf"
+
+    # debugging on rpi-6.9.y
+    PKG_VERSION="03ff51a768fc34ebbe51ad1a60bd566fc672eb46" # First commit on 6.9.y that builds without patch
+    PKG_SHA256="1e902418b1f7d54e57a6ab0bc0f2ec70bdf24a6ea2da9910652e64135e9f953e"
+
     PKG_URL="https://github.com/raspberrypi/linux/archive/${PKG_VERSION}.tar.gz"
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     ;;
