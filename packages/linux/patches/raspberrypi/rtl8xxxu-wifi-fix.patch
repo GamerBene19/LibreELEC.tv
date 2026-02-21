@@ -1,0 +1,47 @@
+diff --git a/drivers/net/wireless/realtek/rtl8xxxu/core.c b/drivers/net/wireless/realtek/rtl8xxxu/core.c
+index ee278f0548e4..f7b35655bec5 100644
+--- a/drivers/net/wireless/realtek/rtl8xxxu/core.c
++++ b/drivers/net/wireless/realtek/rtl8xxxu/core.c
+@@ -6942,7 +6942,8 @@ static int rtl8xxxu_get_free_sec_cam(struct ieee80211_hw *hw)
+ {
+ 	struct rtl8xxxu_priv *priv = hw->priv;
+ 
+-	return find_first_zero_bit(priv->cam_map, priv->fops->max_sec_cam_num);
++	return find_next_zero_bit(priv->cam_map, priv->fops->max_sec_cam_num,
++				  RTL8XXXU_SEC_DEFAULT_KEY_NUM);
+ }
+ 
+ static int rtl8xxxu_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+@@ -6999,12 +7000,15 @@ static int rtl8xxxu_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 
+ 	switch (cmd) {
+ 	case SET_KEY:
++		if (key->flags & IEEE80211_KEY_FLAG_PAIRWISE) {
++			retval = rtl8xxxu_get_free_sec_cam(hw);
++			if (retval < 0)
++				return -EOPNOTSUPP;
+ 
+-		retval = rtl8xxxu_get_free_sec_cam(hw);
+-		if (retval < 0)
+-			return -EOPNOTSUPP;
+-
+-		key->hw_key_idx = retval;
++			key->hw_key_idx = retval;
++		} else {
++			key->hw_key_idx = key->keyidx;
++		}
+ 
+ 		if (vif->type == NL80211_IFTYPE_AP && !(key->flags & IEEE80211_KEY_FLAG_PAIRWISE))
+ 			rtlvif->hw_key_idx = key->hw_key_idx;
+diff --git a/drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.h b/drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.h
+index 4b05dba22e67..188f4bbe99cd 100644
+--- a/drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.h
++++ b/drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.h
+@@ -1788,6 +1788,7 @@ struct rtl8xxxu_cfo_tracking {
+ #define RTL8XXXU_BC_MC_MACID	0
+ #define RTL8XXXU_BC_MC_MACID1	1
+ #define RTL8XXXU_MAX_SEC_CAM_NUM	64
++#define RTL8XXXU_SEC_DEFAULT_KEY_NUM	4
+ 
+ struct rtl8xxxu_priv {
+ 	struct ieee80211_hw *hw;
