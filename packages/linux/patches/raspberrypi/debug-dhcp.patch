@@ -1,0 +1,15 @@
+diff --git a/drivers/net/wireless/realtek/rtl8xxxu/core.c b/drivers/net/wireless/realtek/rtl8xxxu/core.c
+index ee278f0548e4..b4f0cb099ab1 100644
+--- a/drivers/net/wireless/realtek/rtl8xxxu/core.c
++++ b/drivers/net/wireless/realtek/rtl8xxxu/core.c
+@@ -5568,6 +5568,10 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
+ 	if (priv->rtl_chip == RTL8710B || priv->rtl_chip == RTL8192F)
+ 		tx_desc->csum = ~tx_desc->csum;
+ 
++	if (is_broadcast_ether_addr(ieee80211_get_DA(hdr)))
++		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_OFFSET, 16, 1,
++			       skb->data, skb->len, true);
++
+ 	usb_fill_bulk_urb(&tx_urb->urb, priv->udev, priv->pipe_out[queue],
+ 			  skb->data, skb->len, rtl8xxxu_tx_complete, skb);
+ 
